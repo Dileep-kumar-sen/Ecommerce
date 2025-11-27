@@ -398,20 +398,22 @@ if ($userId) {
             </span>
 
             <!-- BUTTONS -->
-            <button onclick="openClaimModal()"
+          <button onclick="openClaimModal()"
     class="w-full bg-orange-500 text-white py-3 rounded-lg text-lg font-medium">
     How to claim
 </button>
+
 
 
             <button class="w-full bg-teal-600 text-white py-3 rounded-lg text-lg font-medium">
                 Go to site
             </button>
 
-            <button onclick="openReportModal()"
+          <button onclick="openReportModal({{ $offeridcheck }})"
         class="w-full bg-red-600 text-white py-3 rounded-lg text-lg font-medium">
     Report
 </button>
+
 
 
             <p class="text-gray-500 text-sm">
@@ -606,10 +608,10 @@ if ($userId) {
         <!-- Buttons -->
         <div class="flex justify-end gap-3 mt-6">
 
-            <button onclick="window.location.href='#'"
-                    class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg">
-                View credential
-            </button>
+            <button onclick="viewCredential('{{ $offeridcheck }}')"
+        class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg">
+    View credential
+</button>
 
             <button onclick="closeClaimModal()"
                     class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">
@@ -625,6 +627,9 @@ if ($userId) {
      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-[9999]">
 
     <div class="bg-white rounded-xl shadow-xl w-[90%] sm:w-[500px] p-5">
+
+        <input type="hidden" id="reportOfferId">
+        <input type="hidden" id="reportUserId" value="{{ auth()->user()->id }}">
 
         <div class="flex justify-between items-center border-b pb-3">
             <h2 class="text-xl font-semibold">Report coupon problem</h2>
@@ -654,10 +659,58 @@ if ($userId) {
 </div>
 
 
+
 @endsection
 @section('javascript')
 <script>
+function viewCredential(offerId) {
+    const membershipId = "{{ auth()->user()->membership_id }}";
+
+    $.ajax({
+        url: "{{ url('/redeem/generate') }}",
+        method: "POST",
+        data: {
+            membership_id: membershipId,
+            offer_id: offerId,
+            _token: "{{ csrf_token() }}"
+        },
+        success: function (res) {
+
+            // 1️⃣ Already Redeemed
+            if (res.type === "redeemed") {
+                toastr.error("This offer is already redeemed!");
+                return;
+            }
+
+            // 2️⃣ Already Claimed (but not redeemed)
+            if (res.type === "claimed") {
+                toastr.warning("You have already claimed this offer!");
+                setTimeout(() => {
+                    window.location.href = "{{ url('/showcard') }}?offerid=" + offerId;
+                }, 500);
+            }
+
+            // 3️⃣ New → Redirect to showcard
+            if (res.success === true && res.type === "new") {
+                toastr.success("QR Generated Successfully!");
+                setTimeout(() => {
+                    window.location.href = "{{ url('/showcard') }}?offerid=" + offerId;
+                }, 500);
+            }
+        },
+        error: function (err) {
+            console.log(err);
+            alert("Something went wrong!");
+        }
+    });
+}
+</script>
+
+<script>
     function openClaimModal() {
+
+
+        // 🔥 Step 2: After alert → open modal
         document.getElementById('claimModal').classList.remove('hidden');
     }
 
@@ -665,8 +718,11 @@ if ($userId) {
         document.getElementById('claimModal').classList.add('hidden');
     }
 </script>
+
 <script>
-function openReportModal() {
+
+function openReportModal(offerId) {
+    document.getElementById("reportOfferId").value = offerId;
     document.getElementById("reportModal").classList.remove("hidden");
 }
 
@@ -675,19 +731,40 @@ function closeReportModal() {
 }
 
 function sendReport() {
-    let message = document.getElementById("reportText").value.trim();
+    const offerId = document.getElementById("reportOfferId").value;
+    const userId = document.getElementById("reportUserId").value;
+    const description = document.getElementById("reportText").value;
 
-    if (message === "") {
-        alert("Please enter the problem details.");
+    if (description.trim() === "") {
+        toastr.error("Please enter problem description.");
         return;
     }
 
-    // Yahan AJAX ya form submit karna hoga
-    alert("Report sent successfully!");
-
-    closeReportModal();
+    $.ajax({
+        url: "{{ url('/report/submit') }}",
+        method: "POST",
+        data: {
+            user_id: userId,
+            offer_id: offerId,
+            description: description,
+            _token: "{{ csrf_token() }}"
+        },
+        success: function (res) {
+            if (res.success) {
+                toastr.success("Report sent successfully!");
+                closeReportModal();
+            } else {
+                toastr.error("Something went wrong!");
+            }
+        },
+        error: function () {
+            toastr.error("Error sending report!");
+        }
+    });
 }
+
 </script>
+
 
     <script>
         function toggleDescription(id, fullText) {

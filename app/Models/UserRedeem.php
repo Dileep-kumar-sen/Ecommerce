@@ -13,10 +13,9 @@ class UserRedeem extends Model
 
     // Mass assignable fields
     protected $fillable = [
-        'user_id',
-        'vchcode',
+        'membership_id',
+        'qr_code',
         'offer_id',
-        'campaign_id',
         'status',
     ];
 

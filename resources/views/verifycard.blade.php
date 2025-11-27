@@ -189,26 +189,61 @@
 <body>
 
     <div class="card">
+
         <div class="header-wave"></div>
 
         <div class="profile-container">
-            <div class="profile-circle">
+{{-- SUCCESS MESSAGE --}}
+@if(isset($message) && $message)
+<div style="
+    text-align:center;
+    background:#d1fae5;
+    color:#065f46;
+    border:2px solid #10b981;
+    padding:12px;
+    border-radius:10px;
+    font-weight:600;
+    margin-bottom:10px;
+">
+    {{ $message }}
+</div>
+@endif
+
+{{-- ERROR MESSAGE --}}
+@if(isset($error) && $error)
+<div style="
+    text-align:center;
+    background:#fee2e2;
+    color:#b91c1c;
+    border:2px solid #ef4444;
+    padding:12px;
+    border-radius:10px;
+    font-weight:600;
+    margin-bottom:10px;
+">
+    {{ $error }}
+</div>
+@endif
+
+
+            <div class="profile-circle mt-3">
+
                 <img src="{{ asset('uploads/profiles/' . $user->profile) }}" alt="{{ $user->name }}">
             </div>
 
             <div class="name">{{ $user->name }}</div>
-            <div class="plan">Silver Plan • Premium Member</div>
+            <div class="plan">{{ $plan->plan_tier }} Member</div>
 
             <div class="status-badge">Asset</div>
 
             <div class="details">
                 <div class="detail-row">
                     <span class="label">Member Since</span>
-                    <span class="value">May 2025</span>
+                    <span class="value">{{ \Carbon\Carbon::parse($subscription->current_period_start)->format('d M Y') }}</span>
                 </div>
                 <div class="detail-row">
                     <span class="label">Valid Until</span>
-                    <span class="value">01 Dec 2025</span>
+                    <span class="value">{{ \Carbon\Carbon::parse($subscription->current_period_start)->format('d F Y') }}</span>
                 </div>
                 <div class="detail-row">
                     <span class="label">Status</span>

@@ -5,10 +5,13 @@ use App\Models\CampaignOffer;
 use App\Models\Category;
 use App\Models\Offer;
 use App\Models\Payment;
+use App\Models\Report;
 use App\Models\Review;
 use App\Models\Subcategory;
+use App\Models\Subscription;
 use App\Models\UserRedeem;
 use Yajra\DataTables\DataTables;
+
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
@@ -19,11 +22,91 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Membership_plan;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 
 
 class UserController extends Controller
 {
+    public function submitReport(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required',
+            'offer_id' => 'required',
+            'description' => 'required|string|max:500',
+        ]);
+
+        Report::create([
+            'user_id' => $request->user_id,
+            'offer_id' => $request->offer_id,
+            'description' => $request->description,
+        ]);
+
+        return response()->json([
+            "success" => true,
+            "message" => "Report submitted"
+        ]);
+    }
+public function generate(Request $request)
+{
+    $membership_id = $request->membership_id;
+    $offer_id = $request->offer_id;
+
+    // 🔹 Check if entry already exists
+    $existing = UserRedeem::where('membership_id', $membership_id)
+                ->where('offer_id', $offer_id)
+                ->first();
+
+    // 1️⃣ Already REDEEMED
+    if ($existing && $existing->status === 'redeem') {
+        return response()->json([
+            "success" => false,
+            "type" => "redeemed",
+            "message" => "This offer is already redeemed!"
+        ]);
+    }
+
+    // 2️⃣ Already CLAIMED but NOT redeemed
+    if ($existing && $existing->status === 'claim') {
+        return response()->json([
+            "success" => true,
+            "type" => "claimed",
+            "message" => "Already claimed but not redeemed!"
+        ]);
+    }
+
+    // 3️⃣ NEW ENTRY → Generate QR
+    $qrUrl = url("redeem/$membership_id/$offer_id");
+
+    $dir = public_path('qrcodes');
+    if (!file_exists($dir)) {
+        mkdir($dir, 0777, true);
+    }
+
+    $fileName = Str::random(10) . ".png";
+    $filePath = $dir . '/' . $fileName;
+
+    // Generate QR
+    QrCode::format('png')->size(300)->generate($qrUrl, $filePath);
+
+    // Save DB
+    $save = UserRedeem::create([
+        'membership_id' => $membership_id,
+        'offer_id' => $offer_id,
+        'qr_code' => "qrcodes/$fileName",
+        'status' => 'claim',
+    ]);
+
+    return response()->json([
+        "success" => true,
+        "type" => "new",
+        "qr_url" => $qrUrl,
+        "qr_image" => asset("qrcodes/$fileName")
+    ]);
+}
+
+
+
     public function forgotPassword()
     {
         return view('forgot_password');
@@ -547,12 +630,10 @@ public function register(Request $request)
         $latestUser = User::latest('id')->first();
         $nextId = $latestUser ? $latestUser->id + 1 : 1;
 
-            $membershipId = 'MBR-' . date('Y') . '-' . str_pad($nextId, 5, '0', STR_PAD_LEFT) . '-' . strtoupper(Str::random(6));
-
-
+        $membershipId = 'MBR-' . date('Y') . '-' . str_pad($nextId, 5, '0', STR_PAD_LEFT) . '-' . strtoupper(Str::random(6));
 
         // CREATE USER
-        User::create([
+        $user = User::create([
             'name'          => $validated['name'],
             'email'         => $validated['email'],
             'password'      => Hash::make($validated['password']),
@@ -562,14 +643,25 @@ public function register(Request $request)
             'longitude'     => $validated['longitude'],
             'profile'       => $imageName,
             'membership_id' => $membershipId,
+        ]);
 
+        // --------------------------------------------------
+        // ✔ Create FREE TRIAL Subscription (7 days)
+        // --------------------------------------------------
+
+        Subscription::create([
+            'user_id'              => $user->id,
+            'plan_id'              => 1, // Free trial plan
+            'status'               => 'active',
+            'mp_subscription_id'   => null,
+            'current_period_start' => now(),
+            'current_period_end'   => now()->addDays(7),
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Registration successful!',
-            'membership_id' => $membershipId,
-
+            'message' => 'Registration successful with free trial!',
+            'membership_id' => $membershipId
         ], 200);
 
     } catch (ValidationException $e) {
@@ -587,10 +679,44 @@ public function register(Request $request)
         ], 500);
     }
 }
-public function showcard()
+
+public function showcard(Request $request)
 {
-    return view('showcard');
+    $offerId = $request->query('offerid'); // Query parameter ?offerid=123
+    $user = auth()->user();
+
+    // 🔹 Get active subscription for this user
+    $subscription = Subscription::where('user_id', $user->id)
+                        ->where('status', 'active')
+                        ->latest('id')
+                        ->first();
+
+    if (!$subscription) {
+        return redirect('/plan')->with('error', 'No active subscription found. Please purchase a plan.');
+    }
+
+    // 🔹 Get plan tier from MembershipPlan model
+    $plan = Membership_plan::find($subscription->plan_id);
+    $planTier = $plan ? $plan->plan_tier : null;
+
+    // 🔹 Check UserRedeem for matching QR code
+    $redeem = UserRedeem::where('membership_id', auth()->user()->membership_id)
+                ->where('offer_id', $offerId)
+                ->where('status', 'claim')
+                ->first();
+
+    $qrCode = $redeem ? $redeem->qr_code : null;
+
+    // 🔹 Pass data to Blade
+    return view('showcard', [
+        'subscription' => $subscription,
+        'planTier' => $planTier,
+        'offerId' => $offerId,
+        'qrCode' => $qrCode
+    ]);
 }
+
+
 public function verifyUser($membershipId)
 {
     // Search user by membership_id
@@ -604,6 +730,71 @@ public function verifyUser($membershipId)
 }
 
 
+public function redeemuser($membership_id, $offer_id)
+{
+    // 🔹 Find UserRedeem entry
+    $redeem = \App\Models\UserRedeem::where('membership_id', $membership_id)
+                ->where('offer_id', $offer_id)
+                ->first();
+
+    if (!$redeem) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Invalid membership or offer!',
+        ]);
+    }
+
+    // 🔹 Get user by membership_id
+    $user = \App\Models\User::where('membership_id', $membership_id)->first();
+
+    if (!$user) {
+        return response()->json([
+            'success' => false,
+            'message' => 'User not found for this membership ID!',
+        ]);
+    }
+
+    // 🔹 Check active subscription for this user
+    $subscription = \App\Models\Subscription::where('user_id', $user->id)
+                        ->where('status', 'active')
+                        ->latest('id')
+                        ->first();
+
+    if (!$subscription) {
+        return view('verifycard', [
+            'user' => $user,
+            'message' => 'No active subscription found. Cannot redeem!'
+        ]);
+    }
+
+    // 🔹 Get plan details from MembershipPlan
+    $plan = Membership_plan::find($subscription->plan_id);
+
+    // 🔹 Already redeemed?
+    if ($redeem->status === 'redeem') {
+        return view('verifycard', [
+            'user' => $user,
+            'subscription' => $subscription,
+            'plan' => $plan,
+            'error' => 'Already claimed!'
+        ]);
+    }
+
+    // 🔹 Update status to redeem if not already redeemed
+    $redeem->update(['status' => 'redeem']);
+
+    return view('verifycard', [
+        'user' => $user,
+        'subscription' => $subscription,
+        'plan' => $plan,
+        'message' => 'Redeem claim successfully!'
+    ]);
+}
+
+
+
+
+
 public function login(Request $request)
 {
     $request->validate([
@@ -614,57 +805,65 @@ public function login(Request $request)
     $credentials = $request->only('email', 'password');
 
     if (Auth::attempt($credentials)) {
-        $request->session()->regenerate();
 
+        $request->session()->regenerate();
         $user = Auth::user();
 
-        // 🔹 Check if user is deactivated
+        // 🔹 If user is deactivated
         if ($user->status == 0) {
-            Auth::logout(); // Logout immediately if inactive
+            Auth::logout();
+            return response()->json([
+                'errors' => ['approved' => ['You are deactivated by admin.']]
+            ], 200);
+        }
 
-            if ($request->ajax()) {
-                return response()->json([
-                    'errors' => ['approved' => ['You are deactivated by admin.']]
-                ], 200);
+        // 🔥 Get ALL active subscriptions of the user
+        $subscriptions = Subscription::where('user_id', $user->id)
+                        ->where('status', 'active')
+                        ->orderBy('id', 'desc')
+                        ->get();
+
+        // 🔹 If no subscriptions
+        if ($subscriptions->isEmpty()) {
+            return response()->json([
+                'errors' => ['subscription' => ['Please purchase a plan to continue.']]
+            ], 200);
+        }
+
+        $validSubscriptionFound = false;
+
+        // 🔥 Loop through all subscriptions
+        foreach ($subscriptions as $sub) {
+
+            $endDate = Carbon::parse($sub->current_period_end);
+
+            if (now()->greaterThan($endDate)) {
+                // Subscription expired
+                $sub->update(['status' => 'expired']);
+            } else {
+                // Found a valid active subscription
+                $validSubscriptionFound = true;
             }
-
-            return back()->withErrors([
-                'approved' => 'You are deactivated by admin.'
-            ])->onlyInput('email');
         }
 
-        // 🔹 Check membership plan
-        if ($user->membership_plan == 0) {
-            if ($request->ajax()) {
-                return response()->json([
-                    'errors' => ['membership_plan' => ['Please purchase a membership plan to continue.']]
-                ], 200);
-            }
-
-            return back()->withErrors([
-                'membership_plan' => 'Please purchase a membership plan to continue.'
-            ])->onlyInput('email');
+        // 🔥 After loop — check if any valid subscription exists
+        if (!$validSubscriptionFound) {
+            return response()->json([
+                'errors' => ['subscription' => ['Your subscription has expired. Please renew your plan.']]
+            ], 200);
         }
 
-        // 🔹 Normal success response
-        if ($request->ajax()) {
-            return response()->json(['success' => true]);
-        }
-
-        return response()->json(['success' => true]);
+        // 🔥 Valid subscription → success login
+        return response()->json(['success' => true, 'redirect' => '/home']);
     }
 
-    // 🔹 Invalid credentials
-    if ($request->ajax()) {
-        return response()->json([
-            'errors' => ['email' => ['The provided credentials do not match our records.']]
-        ], 422);
-    }
-
-    return back()->withErrors([
-        'email' => 'The provided credentials do not match our records.',
-    ])->onlyInput('email');
+    // 🔹 Invalid login
+    return response()->json([
+        'errors' => ['email' => ['The provided credentials do not match our records.']]
+    ], 422);
 }
+
+
 
 
 

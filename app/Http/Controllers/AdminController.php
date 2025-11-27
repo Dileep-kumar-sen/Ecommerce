@@ -6,9 +6,12 @@ use App\Models\Admin;
 use App\Models\BusinessMembershipPlan;
 use App\Models\Campaign;
 use App\Models\Payment;
+use App\Models\Report;
 use App\Models\User;
 use App\Models\UserRedeem;
 use Carbon\Carbon;
+
+use App\Models\Banner;
 use App\Models\Membership_plan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -21,6 +24,7 @@ use App\Models\Offer;
 
 class AdminController extends Controller
 {
+
     public function profileedit(Request $request)
     {
         $adminId = session('admin_id');
@@ -559,7 +563,117 @@ public function usermanagement(Request $request)
 
     return view('admin.usermanagement');
 }
+public function reports(Request $request)
+    {
+        if ($request->ajax()) {
 
+            $reports = Report::with(['user', 'offer.business'])
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            return DataTables::of($reports)
+                ->addIndexColumn()
+
+                // User Name
+                ->addColumn('user_name', function ($row) {
+                    return $row->user->name ?? 'N/A';
+                })
+
+                // Business Name
+                ->addColumn('business_name', function ($row) {
+                    return $row->offer->business->name ?? 'N/A';
+                })
+
+                // Offer Name
+                ->addColumn('offer_name', function ($row) {
+                    return $row->offer->offer_name ?? $row->offer->title ?? 'N/A';
+                })
+
+                // Description
+                ->addColumn('description', function ($row) {
+                    return $row->description ?? 'N/A';
+                })
+
+                // Date
+                ->addColumn('date', function ($row) {
+                    return $row->created_at ? $row->created_at->format('d M, Y') : 'N/A';
+                })
+
+                // Action Buttons
+                ->addColumn('actions', function ($row) {
+                    return '
+                        <button class="px-3 py-1 bg-blue-600 text-white rounded view-report"
+                                data-id="' . $row->id . '">
+                            View
+                        </button>
+                    ';
+                })
+
+                ->rawColumns(['actions'])
+                ->make(true);
+        }
+
+        return view('admin.reports');
+    }
+public function view($id)
+{
+    $report = Report::with(['user', 'offer.business'])
+                    ->findOrFail($id);
+
+    return response()->json([
+        // USER INFO
+        'user'          => $report->user->name ?? 'N/A',
+        'user_phone'    => $report->user->phone ?? 'N/A',
+        'user_email'    => $report->user->email ?? 'N/A',
+        'user_location'    => $report->user->location ?? 'N/A',
+
+        // BUSINESS INFO
+        'business'              => $report->offer->business->name ?? 'N/A',
+        'business_email'     => $report->offer->business->email ?? 'N/A',
+        'business_phone'        => $report->offer->business->phone ?? 'N/A',
+        'business_location'        => $report->offer->business->location ?? 'N/A',
+
+        // OFFER INFO
+        'offer'             => $report->offer->title ?? 'N/A',
+        'offer_discount'    => $report->offer->discount ?? 'N/A',
+        'offer_price'    => $report->offer->price ?? 'N/A',
+        'offer_after_discount'    => $report->offer->discount_price ?? 'N/A',
+
+        // REPORT DESCRIPTION
+        'description' => $report->description ?? 'N/A',
+    ]);
+}
+
+public function banner()
+    {
+        $banners = Banner::latest()->get();
+        return view('admin.banner', compact('banners'));
+    }
+
+    public function bannerstore(Request $request)
+    {
+        $request->validate([
+            'images.*' => 'required|image|mimes:jpg,jpeg,png,webp|max:2048'
+        ]);
+
+        if (!$request->hasFile('images') || count($request->file('images')) < 2) {
+            return back()->with('error', 'Minimum 2 banner photos required.');
+        }
+
+        $imageNames = [];
+
+        foreach ($request->file('images') as $img) {
+            $name = uniqid() . "." . $img->getClientOriginalExtension();
+            $img->move(public_path('uploads/banners'), $name);
+            $imageNames[] = $name;
+        }
+
+        Banner::create([
+            'images' => $imageNames
+        ]);
+
+        return back()->with('success', 'Banners uploaded successfully!');
+    }
 public function deactivateUser(Request $request)
 {
     try {

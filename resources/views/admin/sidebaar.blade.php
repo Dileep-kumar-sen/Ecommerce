@@ -116,6 +116,18 @@
   <li class="relative px-6 py-3">
     <a
       class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200"
+      href="{{ asset('/admin/banners') }}"
+    >
+      <!-- Users Icon -->
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87M16 3.13a4 4 0 010 7.75M8 3.13a4 4 0 000 7.75" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="ml-4">banner</span>
+    </a>
+  </li>
+  <li class="relative px-6 py-3">
+    <a
+      class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200"
       href="/admin/category"
     >
       <!-- Category Icon (Folder) -->
@@ -225,6 +237,13 @@
       <!-- Payment Icon -->
       <img src="{{asset('join.png')}}" alt="" class="w-5 h-5">
       <span class="ml-4">Join Business Campaign Event</span>
+    </a>
+  </li>
+  <li class="relative px-6 py-3">
+    <a href="/admin/reports" class="inline-flex items-center w-full text-sm font-semibold transition-colors">
+      <!-- Payment Icon -->
+      <img src="{{asset('join.png')}}" alt="" class="w-5 h-5">
+      <span class="ml-4">Report</span>
     </a>
   </li>
 

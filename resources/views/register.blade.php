@@ -215,7 +215,7 @@
 
                 if (data.success) {
                     toastr.success("Account created!");
-                    // setTimeout(() => (window.location.href = "/login"), 1500);
+                    setTimeout(() => (window.location.href = "/"), 1500);
                 } else {
                     toastr.error(data.message || "Error");
                 }

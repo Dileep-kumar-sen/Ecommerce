@@ -16,7 +16,10 @@ Route::get('/',function(){
 Route::get('info',function(){
     return phpinfo();
 });
-Route::get('/verify-user/{membershipId}', [App\Http\Controllers\UserController::class, 'verifyUser']);
+Route::post('/report/submit', [UserController::class, 'submitReport']);
+
+Route::post('/redeem/generate', [UserController::class, 'generate']);
+Route::get('/redeem/{membership_id}/{offer_id}', [UserController::class, 'redeemuser']);
 Route::get('/showcard', [App\Http\Controllers\UserController::class, 'showcard']);
 Route::post('/logout', function (Request $request) {
     Auth::logout(); // Logout user
@@ -105,7 +108,14 @@ Route::get('/ajax/subcategories/{category}', [BusinessController::class, 'getSub
 //admin route
 
 Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
-Route::get('/admin/usermanagement',[AdminController::class,'usermanagement'])->name('admin.usermanagement');
+Route::get('/admin/usermanagement',action: [AdminController::class,'usermanagement'])->name('admin.usermanagement');
+Route::get('/admin/reports/data',action: [AdminController::class,'reports'])->name('admin.reports.data');
+Route::get('/admin/report/view/{id}', [AdminController::class, 'view'])
+     ->name('admin.report.view');
+        Route::get('/admin/banners', [AdminController::class, 'banner'])->name('admin.banners');
+    Route::post('/banners/store', [AdminController::class, 'bannerstore'])->name('admin.banners.store');
+
+
 Route::get('/admin/businessmanagement',[AdminController::class,'businessmanagement'])->name('admin.businessmanagement');
 Route::post('/admin/business/deactivate', [AdminController::class, 'deactivateBusiness'])->name('admin.business.deactivate');
 Route::post('/admin/business/delete', [AdminController::class, 'deleteBusiness'])->name('admin.business.delete');

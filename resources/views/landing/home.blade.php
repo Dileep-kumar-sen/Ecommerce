@@ -1,19 +1,67 @@
 @extends('landing')
 @section('content')
+@php
+use Carbon\Carbon;
+
+$subscription = \App\Models\Subscription::where('user_id', auth()->id())
+                ->where('status', 'active')
+                ->orderBy('id','desc')
+                ->first();
+
+$daysLeft = null;
+
+if ($subscription) {
+
+    // 🔹 End date from subscription
+    $end = Carbon::parse($subscription->current_period_end);
+
+    // 🔹 Aaj ki date se pure din bache hue (integer only)
+    $daysLeft = now()->startOfDay()->diffInDays($end->startOfDay());
+}
+@endphp
+
+
+@if($subscription && $daysLeft !== null)
+<div class="flex justify-center">
+    <div class="px-6 py-4 rounded-xl bg-white/30 backdrop-blur-md shadow-lg border border-white/20
+                text-center text-lg font-semibold text-gray-800
+                flex items-center gap-2 flex-nowrap
+                hover:shadow-xl hover:scale-105 transition-all duration-200">
+
+        <span class="text-[15px]">⏳ You have</span>
+        <span class="text-red-600 font-extrabold">{{ $daysLeft }} days</span>
+        left —
+        <a href="/plan"
+           class="text-blue-700 underline underline-offset-4 hover:text-blue-900 font-bold">
+           Renew Plan
+        </a>
+
+    </div>
+</div>
+
+@endif
+
+
+
+
+
+@php
+    use App\Models\Banner;
+    $banners = Banner::all(); // No controller needed
+@endphp
+
 <div class="relative w-full h-[500px] overflow-hidden" id="hero-carousel">
         <!-- Slides -->
-        <div class="absolute inset-0">
-            <img src="{{ asset('banner.jpg') }}" class="w-full h-[500px] object-cover carousel-slide fade"
-                alt="Restaurant">
+        @foreach($banners as $banner)
+    @foreach($banner->images as $img)
+        <div class="absolute inset-0 hidden carousel-slide fade">
+            <img src="{{ asset('uploads/banners/'.$img) }}"
+                 class="w-full h-[500px] object-cover"
+                 alt="Banner">
         </div>
-        <div class="absolute inset-0 hidden">
-            <img src="{{ asset('banner.jpg') }}" class="w-full h-[500px] object-cover carousel-slide fade"
-                alt="Food">
-        </div>
-        <div class="absolute inset-0 hidden">
-            <img src="{{ asset('banner.jpg') }}" class="w-full h-[500px] object-cover carousel-slide fade"
-                alt="Travel">
-        </div>
+    @endforeach
+@endforeach
+
 
         <!-- 🔹 Overlay -->
         <div
@@ -21,6 +69,7 @@
             <h1 class="text-3xl font-extrabold bg-gradient-to-r from-#f5e10e-400 to-#e3e3e3-500 bg-clip-text text-transparent drop-shadow-lg"
                 style="color: #9E9E9E">
                 Get your coupon
+
             </h1>
             <p class="text-1xl text-gray-200 mt-3">The best deals in Dining, Travel, Beauty and much more</p>
 
@@ -485,7 +534,7 @@
 
     <!-- 🔹 Top Discount Section -->
 @php
-    use Carbon\Carbon;
+
 
     // Sabhi campaign-offers fetch
     $campaignOffers = \App\Models\CampaignOffer::with('campaign')->get();

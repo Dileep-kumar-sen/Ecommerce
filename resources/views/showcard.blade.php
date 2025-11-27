@@ -158,19 +158,20 @@
     </div>
 
     <div class="name">{{ auth()->user()->name }}</div>
+    <br>
     <div class="member-id">Member No. {{ auth()->user()->membership_id }}</div>
 
     <div class="asset-badge">Asset</div>
 
     <div class="info">
-        <p><strong>Plan:</strong> Silver</p>
-        <p><strong>Valid until:</strong> 2025-12-01</p>
-        <p><strong>Last accessed:</strong> 2025-11-24 13:15:00</p>
+        <p><strong>Plan:</strong>{{ $planTier }}</p>
+        <p><strong>Valid until:</strong> {{ $subscription->current_period_end }}</p>
+        <p><strong>Last accessed:</strong>{{ $subscription->updated_at }}</p>
     </div>
 
     <div class="qr-box">
         <p style="margin-bottom: 10px; font-weight: bold;">Scan to validate</p>
-        <img src="{{ asset('/uploads/qrcodes/'.auth()->user()->qr_code) }}" alt="QR Code" />
+        <img src="{{ asset($qrCode) }}" alt="QR Code" />
     </div>
 
     <button class="btn back-btn" onclick="history.back()">← Back</button>
