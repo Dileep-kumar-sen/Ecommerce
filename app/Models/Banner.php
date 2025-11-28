@@ -8,7 +8,5 @@ class Banner extends Model
 {
      protected $fillable = ['images'];
 
-    protected $casts = [
-        'images' => 'array',
-    ];
+
 }

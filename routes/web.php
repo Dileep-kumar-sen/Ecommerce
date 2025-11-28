@@ -114,6 +114,8 @@ Route::get('/admin/report/view/{id}', [AdminController::class, 'view'])
      ->name('admin.report.view');
         Route::get('/admin/banners', [AdminController::class, 'banner'])->name('admin.banners');
     Route::post('/banners/store', [AdminController::class, 'bannerstore'])->name('admin.banners.store');
+Route::delete('/admin/banners/{id}/delete', [AdminController::class, 'bannerDelete'])
+     ->name('admin.banners.delete');
 
 
 Route::get('/admin/businessmanagement',[AdminController::class,'businessmanagement'])->name('admin.businessmanagement');
@@ -196,12 +198,7 @@ Route::get('/payment-success', [PaymentController::class, 'paymentSuccess'])->na
 
 
 
-Route::get('/payment-failure', function (Request $request) {
-    return response()->json([
-        'status' => 'failed',
-        'message' => 'Payment failed. Please try again.',
-    ]);
-})->name('payment.failure');
+Route::get('/payment-failure',[PaymentController::class,'payment_failure'])->name('payment.failure');
 
 
 Route::get('/payment-pending', function (Request $request) {

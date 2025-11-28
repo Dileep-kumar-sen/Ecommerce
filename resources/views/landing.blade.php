@@ -18,6 +18,22 @@
   }
 </style>
 <style>
+.hidden-card {
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    pointer-events: none;
+    transition: all 0.4s ease;
+}
+
+.show-card {
+    opacity: 1;
+    max-height: 600px;
+    transition: all 0.4s ease;
+}
+</style>
+
+<style>
     .profile-mobilebtn {
         display: flex;
         align-items: center;

@@ -102,7 +102,8 @@ public function update(Request $request, $id)
             'referral_bonus' => 'nullable|string',
             'plan_price' => 'nullable|numeric',
             'description' => 'nullable|string',
-            'plan_icon' => 'nullable|image|mimes:jpg,jpeg,png,gif,webp'
+            'plan_icon' => 'nullable|image|mimes:jpg,jpeg,png,gif,webp',
+            'color' => 'nullable'
         ]);
 
         if ($validator->fails()) {
@@ -130,6 +131,7 @@ public function update(Request $request, $id)
         $plan->referral_bonus = $request->input('referral_bonus');
         $plan->plan_price = $request->input('plan_price');
         $plan->description = $request->input('description');
+        $plan->color = $request->input('color');
 
         if ($request->hasFile('plan_icon')) {
             $file = $request->file('plan_icon');
@@ -225,7 +227,8 @@ public function update(Request $request, $id)
         'plan_price' => 'nullable|numeric',
         'description' => 'nullable|string',
         'plan_icon' => 'nullable|image|mimes:jpeg,png,jpg,svg',
-        'month_year'=>'required'
+        'month_year'=>'required',
+        'color'=>'nullable',
 
     ]);
 
@@ -252,6 +255,7 @@ public function update(Request $request, $id)
         'description' => $request->description,
         'plan_icon' => $iconPath,
         'month_year'=>$request->month_year,
+         'color' => $request->color,
     ]);
 
     return response()->json([
@@ -649,31 +653,48 @@ public function banner()
         $banners = Banner::latest()->get();
         return view('admin.banner', compact('banners'));
     }
+public function bannerDelete($id)
+{
+    $banner = Banner::findOrFail($id);
 
-    public function bannerstore(Request $request)
-    {
-        $request->validate([
-            'images.*' => 'required|image|mimes:jpg,jpeg,png,webp|max:2048'
-        ]);
+    $imagePath = public_path('uploads/banners/' . $banner->images);
 
-        if (!$request->hasFile('images') || count($request->file('images')) < 2) {
-            return back()->with('error', 'Minimum 2 banner photos required.');
-        }
-
-        $imageNames = [];
-
-        foreach ($request->file('images') as $img) {
-            $name = uniqid() . "." . $img->getClientOriginalExtension();
-            $img->move(public_path('uploads/banners'), $name);
-            $imageNames[] = $name;
-        }
-
-        Banner::create([
-            'images' => $imageNames
-        ]);
-
-        return back()->with('success', 'Banners uploaded successfully!');
+    if (file_exists($imagePath)) {
+        unlink($imagePath);
     }
+
+    $banner->delete();
+
+    return back()->with('success', 'Banner deleted successfully!');
+}
+
+  public function bannerstore(Request $request)
+{
+    $request->validate([
+        'images.*' => 'required|image|mimes:jpg,jpeg,png,webp|max:2048'
+    ]);
+
+    if (!$request->hasFile('images') || count($request->file('images')) < 2) {
+        return back()->with('error', 'Minimum 2 banner photos required.');
+    }
+
+    foreach ($request->file('images') as $img) {
+
+        // unique name
+        $name = uniqid() . "." . $img->getClientOriginalExtension();
+
+        // move file
+        $img->move(public_path('uploads/banners'), $name);
+
+        // save each image in new row
+        Banner::create([
+            'images' => $name  // <-- STRING (NOT ARRAY)
+        ]);
+    }
+
+    return back()->with('success', 'Banners uploaded successfully!');
+}
+
 public function deactivateUser(Request $request)
 {
     try {

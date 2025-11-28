@@ -22,7 +22,8 @@ class Membership_plan extends Model
         'plan_price',
         'description',
         'plan_icon',
-        'month_year'
+        'month_year',
+        'color',
     ];
     public function payments()
 {

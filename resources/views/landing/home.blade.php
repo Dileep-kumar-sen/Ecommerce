@@ -47,20 +47,20 @@ if ($subscription) {
 
 @php
     use App\Models\Banner;
-    $banners = Banner::all(); // No controller needed
+    $banners = Banner::all();
 @endphp
 
 <div class="relative w-full h-[500px] overflow-hidden" id="hero-carousel">
-        <!-- Slides -->
-        @foreach($banners as $banner)
-    @foreach($banner->images as $img)
+    <!-- Slides -->
+    @foreach($banners as $banner)
         <div class="absolute inset-0 hidden carousel-slide fade">
-            <img src="{{ asset('uploads/banners/'.$img) }}"
+            <img src="{{ asset('uploads/banners/' . $banner->images) }}"
                  class="w-full h-[500px] object-cover"
                  alt="Banner">
         </div>
     @endforeach
-@endforeach
+</div>
+
 
 
         <!-- 🔹 Overlay -->

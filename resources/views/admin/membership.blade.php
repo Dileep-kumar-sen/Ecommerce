@@ -21,13 +21,8 @@
 
         <div>
             <label class="block text-gray-700 font-medium mb-1">Plan Tier</label>
-            <select name="plan_tier" id="userPlanTier"
+            <input type="text" id="userPlanTier" name="plan_tier" placeholder="e.g., Free, Basic, Premium"
                 class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400">
-                <option value="free">Free</option>
-                <option value="basic">Basic</option>
-                <option value="plus">Plus</option>
-                <option value="premium">Premium</option>
-            </select>
         </div>
         <div>
             <label class="block text-gray-700 font-medium mb-1">Month/year</label>
@@ -57,32 +52,32 @@
                 class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400">
         </div>
 
-        <div id="userExclusiveDiv">
+        {{-- <div id="userExclusiveDiv">
             <label class="block text-gray-700 font-medium mb-1">Exclusive Offers (Monthly)</label>
             <input type="number" name="exclusive_offers_monthly" placeholder="3"
                 class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400">
-        </div>
+        </div> --}}
 
         <div id="userSpecialDiv">
             <label class="block text-gray-700 font-medium mb-1">Features</label>
-            <textarea name="features" placeholder="Early access, Surprise coupon, Special events"
+            <textarea name="features" placeholder="• 7-day trial ,• Basic access to coupons, • Discounts up to 10%"
                 class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"></textarea>
         </div>
 
-        <div id="userGamificationDiv">
+        {{-- <div id="userGamificationDiv">
             <label class="block text-gray-700 font-medium mb-1">Achievements</label>
             <textarea name="achievements" placeholder="Streaks, Weekly missions, User levels (Bronze/Silver/Gold/Diamond)"
                 class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"></textarea>
-        </div>
+        </div> --}}
 
-        <div id="userReferralDiv">
+        {{-- <div id="userReferralDiv">
             <label class="block text-gray-700 font-medium mb-1">Referral / Bonus Benefits</label>
             <textarea name="referral_bonus" placeholder="2 friends → 1 month Basic free, 5+ friends → 1 month Premium free"
                 class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"></textarea>
-        </div>
+        </div> --}}
 
         <div id="userPriceDiv">
-            <label class="block text-gray-700 font-medium mb-1">Plan Price (Optional)</label>
+            <label class="block text-gray-700 font-medium mb-1">Plan Price</label>
             <input type="number" name="plan_price" placeholder="199"
                 class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400">
         </div>
@@ -100,6 +95,15 @@
             <textarea name="description" placeholder="Describe the plan benefits here"
                 class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"></textarea>
         </div>
+<div class="flex items-center gap-3">
+        <label class="text-gray-700 font-medium">Choose Plan Color:</label>
+
+        <input type="color" name="color" value="#4F46E5"
+               class="w-12 h-12 p-0 border-2 border-gray-300 rounded-full cursor-pointer shadow hover:scale-110 transition-transform">
+
+        <span class="text-gray-500 text-sm">Pick a color for this plan</span>
+    </div>
+</div>
 
         <div class="flex justify-center">
             <button type="submit"
@@ -186,6 +190,14 @@
         </div>
 
     </div>
+    <script>
+    const colorPicker = document.getElementById('textColorPicker');
+    const textarea = document.getElementById('descriptionTextarea');
+
+    colorPicker.addEventListener('input', function() {
+        textarea.style.color = colorPicker.value;
+    });
+</script>
    <script>
 $(document).ready(function() {
 

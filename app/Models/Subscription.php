@@ -11,6 +11,7 @@ class Subscription extends Model
         'user_id',
         'plan_id',
         'status',
+        'payment_method',
         'mp_subscription_id',
         'current_period_start',
         'current_period_end',

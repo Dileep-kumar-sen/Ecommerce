@@ -58,85 +58,139 @@
       </div>
 
       <!-- Offers Grid -->
-      <section class="bg-white py-10 rounded-2xl shadow-md overflow-hidden">
-        <div id="discount-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          @forelse($offers as $key => $offer)
-              @php
-                  $ratings = \App\Models\Review::where('offer_id', $offer->id)->pluck('rating');
-                  $avgRating = $ratings->avg() ?? 0;
-                  $totalReviews = $ratings->count();
-                  $filledStars = floor($avgRating);
-                  $halfStar = ($avgRating - $filledStars) >= 0.5;
-                  $emptyStars = 5 - $filledStars - ($halfStar ? 1 : 0);
-              @endphp
+     <section class="bg-white py-16 relative">
+    <div class="max-w-[91rem] mx-auto px-4">
 
-              <div class="deal-card group bg-white rounded-xl shadow-md hover:shadow-lg transition transform hover:-translate-y-1 p-3 text-left offer-item" data-index="{{ $key }}">
-                <div class="relative">
-                  <img src="{{ asset('uploads/offers/' . $offer->image) }}" alt="{{ $offer->title }}"
-                       class="w-full h-40 sm:h-44 object-cover rounded-lg">
 
-                  <span class="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
+
+        <div >
+
+            {{-- GRID SAME LIKE NICHE --}}
+            <section class="bg-white  relative">
+    <div class="max-w-[91rem] mx-auto px-4">
+
+
+
+        <div >
+
+      <div id="offerContainerTop" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+    @foreach($offers as $key => $offer)
+
+    @php
+        $ratings = \App\Models\Review::where('offer_id', $offer->id)->pluck('rating');
+        $avgRating = $ratings->avg() ?? 0;
+        $totalReviews = $ratings->count();
+        $images = json_decode($offer->image, true);
+        if(!is_array($images)) $images = [$offer->image];
+    @endphp
+
+    <div class="bg-white rounded-2xl shadow-md overflow-hidden transition-all duration-300 hover:-translate-y-1
+                flex flex-col h-[440px] offer-card
+                {{ $key >= 3 ? 'hidden-card' : 'show-card' }}"> {{-- DO NOT USE hidden --}}
+
+        {{-- IMAGE SLIDER --}}
+        <div class="relative overflow-hidden">
+            <div class="swiper offerSlider">
+                <div class="swiper-wrapper">
+                    @foreach($images as $img)
+                        <div class="swiper-slide">
+                            <img src="{{ asset('/uploads/offers/'.$img) }}" class="w-full h-56 object-cover"/>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+
+            <span class="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-lg shadow-md">
+                -{{ $offer->discount }}%
+            </span>
+
+            <span class="absolute top-3 right-3 bg-gray-100 text-gray-700 text-xs font-semibold px-3 py-1 rounded-lg shadow-md">
+                {{ $offer->subcategory->name ?? 'Category' }}
+            </span>
+        </div>
+
+        <div class="p-5 flex flex-col flex-grow">
+            <h3 class="font-bold text-gray-800 text-[15px] text-left h-[40px] overflow-hidden">
+                {{ Str::limit($offer->title, 30) }}
+            </h3>
+
+            <p class="text-gray-600 text-sm mt-1 text-left h-[40px] overflow-hidden">
+                {{ Str::limit($offer->description, 35) }}
+            </p>
+
+            <div class="mt-3 text-left">
+                <span class="text-lg font-extrabold text-green-600">
                     {{ $offer->discount }}% OFF
-                  </span>
+                </span>
+            </div>
 
-                  <span class="absolute top-2 right-2 bg-gray-200 text-gray-700 text-xs font-semibold px-2 py-1 rounded">
-                    {{ $offer->subcategory->name ?? 'Subcategory' }}
-                  </span>
-                </div>
+            <div class="mt-3 text-sm text-gray-600 space-y-1 text-left">
+                <p>👀 {{ rand(20, 120) }} Visits</p>
+                <p>⏳ Ends: {{ date('d/m/Y', strtotime($offer->expiry_datetime)) }}</p>
+            </div>
 
-                <h3 class="mt-3 text-sm sm:text-md font-semibold text-gray-800 truncate">{{ $offer->title }}</h3>
+            <a href="/detail/{{ $offer->id }}"
+                class="block mt-auto text-center bg-[#7a5af8] text-white font-semibold py-3 rounded-xl
+                       hover:bg-[#6845e0] transition">
+                View Benefit →
+            </a>
+        </div>
+    </div>
 
-                <div class="flex items-center text-xs sm:text-sm mt-1">
-                  @for ($i = 0; $i < $filledStars; $i++)
-                      <i class="fa-solid fa-star text-yellow-400"></i>
-                  @endfor
-                  @if ($halfStar)
-                      <i class="fa-solid fa-star-half-stroke text-yellow-400"></i>
-                  @endif
-                  @for ($i = 0; $i < $emptyStars; $i++)
-                      <i class="fa-regular fa-star text-gray-300"></i>
-                  @endfor
-                  <span class="text-gray-500 text-xs ml-1">
-                      {{ number_format($avgRating, 1) }} ({{ $totalReviews }})
-                  </span>
-                </div>
+    @endforeach
+</div>
 
-                <div class="mt-1 flex items-center gap-2">
-                  <span class="text-sm sm:text-base font-bold text-gray-800">${{ $offer->discount_price }}</span>
-                  <span class="text-gray-400 text-xs line-through">${{ $offer->price }}</span>
-                </div>
+@if($offers->count() > 3)
+<div class="text-center mt-8">
+    <button id="topLoadMoreBtn"
+        class="bg-[#7a5af8] text-white px-6 py-3 rounded-xl hover:bg-purple-700 transition shadow-md">
+        Load More
+    </button>
+</div>
+@endif
 
-                <a href="/detail/{{ $offer->id }}"
-                   class="block text-center mt-3 border border-gray-300 text-blue-600 font-medium py-1.5 text-xs sm:text-sm rounded-md hover:bg-yellow-400 hover:text-blue-700 transition">
-                   🎟️ Get Coupon
-                </a>
-              </div>
-          @empty
-              <div class="col-span-full flex justify-center items-center flex-col mt-10">
-                <img src="{{ asset('/no_offer.jpg') }}" alt="No Offer" class="w-48 h-48 sm:w-64 sm:h-64 object-contain mb-4">
-                <p class="text-gray-600 text-sm sm:text-base">No offers found for this category.</p>
-              </div>
-          @endforelse
+
+
+
         </div>
 
-        <!-- Pagination -->
-        @if($offers->count() > 8)
-        <div class="flex justify-center space-x-4 mt-6">
-          <button id="prev-btn" class="text-white p-3 rounded-full shadow hover:shadow-lg transition w-[46px] h-[46px] border border-[#bcf020e6]">
-            <i class="fa-solid fa-arrow-left text-black"></i>
-          </button>
-          <button id="next-btn" class="text-white p-3 rounded-full bg-[#f5e10e] shadow hover:shadow-lg transition w-[46px] h-[46px] border border-[#bcf020e6]">
-            <i class="fa-solid fa-arrow-right text-black"></i>
-          </button>
+    </div>
+</section>
+
+
         </div>
-        @endif
-      </section>
+
+    </div>
+</section>
+
     </div>
   </div>
 </div>
 
 @endsection
 @section('javascript')
+<script>
+document.getElementById("topLoadMoreBtn")?.addEventListener("click", function () {
+
+    let cards = document.querySelectorAll(".hidden-card");
+
+    cards.forEach((card, index) => {
+        if (index < 3) {
+            card.classList.remove("hidden-card");
+            card.classList.add("show-card");
+        }
+    });
+
+    if (document.querySelectorAll(".hidden-card").length === 0) {
+        this.style.display = "none";
+    }
+
+});
+</script>
+
+
+
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const items = document.querySelectorAll('.offer-item');
